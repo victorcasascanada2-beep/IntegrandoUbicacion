@@ -97,6 +97,7 @@ if "informe_final" not in st.session_state:
                     st.error(f"Error en el procesado: {e}")
 
 # --- RESULTADOS Y BOTONES AL FINAL ---
+# --- RESULTADOS Y BOTONES AL FINAL ---
 if "informe_final" in st.session_state:
     st.markdown(st.session_state.informe_final)
     
@@ -107,10 +108,16 @@ if "informe_final" in st.session_state:
 
     st.divider()
     
+    # PASAMOS texto_ubicacion AL GENERADOR (Aquí está el cambio clave)
     html_doc = html_generator.generar_informe_html(
-        st.session_state.marca_final, st.session_state.modelo_final, 
-        st.session_state.informe_final, st.session_state.fotos_final
+        st.session_state.marca_final, 
+        st.session_state.modelo_final, 
+        st.session_state.informe_final, 
+        st.session_state.fotos_final,
+        texto_ubicacion # <--- Se lo pasamos aquí
     )
+    
+    # ... resto de los botones (Download, Drive, Otra)
     
     c1, c2, c3 = st.columns(3)
     with c1:
