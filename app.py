@@ -8,6 +8,12 @@ import location_manager  # <--- NUEVO MOTOR
 # 1. CONFIGURACIÓN BÁSICA
 st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
 
+# --- LLAMADA AL GPS ---
+# Esto ejecutará la función de tu nuevo archivo y guardará el texto (coordenadas o aviso)
+texto_ubicacion = location_manager.obtener_ubicacion() 
+
+st.divider()
+
 # 2. LIMPIEZA MÍNIMA (Solo para quitar lo de Streamlit)
 st.markdown("""
 <style>
@@ -49,9 +55,21 @@ if "informe_final" not in st.session_state:
         if not (marca and modelo and fotos):
             st.warning("⚠️ Rellena marca, modelo y fotos.")
         else:
-            with st.spinner("Analizando..."):
+            with st.spinner("Analizando con ubicación..."):
                 try:
-                    inf = ia_engine.realizar_peritaje(st.session_state.vertex_client, marca, modelo, int(anio_txt), int(horas_txt), observaciones, fotos)
+                    # JUNTAMOS LAS NOTAS CON LA UBICACIÓN PARA QUE LA IA LO SEPA
+                    notas_completas = f"{observaciones}\n\n📍 UBICACIÓN DEL TRACTOR (Mercado Local): {texto_ubicacion}"
+                    
+                    # PASAMOS 'notas_completas' EN LUGAR DE SOLO 'observaciones'
+                    inf = ia_engine.realizar_peritaje(
+                        st.session_state.vertex_client, 
+                        marca, 
+                        modelo, 
+                        int(anio_txt), 
+                        int(horas_txt), 
+                        notas_completas, 
+                        fotos
+                    )
                     st.session_state.informe_final = inf
                     st.session_state.fotos_final = [Image.open(f) for f in fotos]
                     st.session_state.marca_final, st.session_state.modelo_final = marca, modelo
@@ -87,7 +105,6 @@ if "informe_final" in st.session_state:
             if res: st.success("✅ Guardado")
     
     with c3:
-        # Aquí está el botón de NUEVA que pedías al final
         if st.button("🔄 OTRA", use_container_width=True):
             for k in ["informe_final", "fotos_final", "marca_final", "modelo_final"]:
                 if k in st.session_state: del st.session_state[k]
