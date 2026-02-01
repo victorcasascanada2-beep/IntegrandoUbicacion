@@ -9,10 +9,24 @@ import location_manager
 #st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
 
 # 2. LIMPIEZA MÍNIMA
+# 2. LIMPIEZA MÍNIMA Y AJUSTE DE ALTURA
 st.markdown("""
 <style>
+    /* Ocultar herramientas y footer */
     [data-testid="stToolbar"], footer {display: none;}
     section[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {display: none !important;}
+    
+    /* ELIMINAR ESPACIO SUPERIOR */
+    .block-container {
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+        margin-top: -2rem !important;
+    }
+    
+    /* Ajustar espacio del logo si es necesario */
+    [data-testid="stImage"] {
+        margin-top: 0rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
