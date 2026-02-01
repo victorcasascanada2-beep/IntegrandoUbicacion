@@ -10,20 +10,20 @@ import location_manager
 
 # 2. LIMPIEZA MÍNIMA
 # 2. LIMPIEZA MÍNIMA Y AJUSTE DE ALTURA
+# 2. LIMPIEZA MÍNIMA Y AJUSTE DE ALTURA
 st.markdown("""
 <style>
     /* Ocultar herramientas y footer */
     [data-testid="stToolbar"], footer {display: none;}
     section[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {display: none !important;}
     
-    /* ELIMINAR ESPACIO SUPERIOR */
+    /* AJUSTE PARA QUE NO SE MUERDA EL LOGO */
     .block-container {
-        padding-top: 0rem !important;
+        padding-top: 1rem !important;    /* Un poco de espacio interno arriba */
         padding-bottom: 0rem !important;
-        margin-top: -2rem !important;
+        margin-top: -1rem !important;   /* Menos agresivo que antes para no recortar */
     }
     
-    /* Ajustar espacio del logo si es necesario */
     [data-testid="stImage"] {
         margin-top: 0rem;
     }
