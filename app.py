@@ -46,8 +46,17 @@ st.title("Tasación Experta Agrícola Noroeste")
 st.divider()
 
 # --- FORMULARIO ---
+# --- FORMULARIO ---
 if "informe_final" not in st.session_state:
     with st.form("form_tasacion"):
+        # 1. LAS FOTOS PRIMERO (Para que carguen mientras escribes)
+        st.markdown("##### 1. Sube las fotos del tractor")
+        fotos = st.file_uploader("", accept_multiple_files=True, type=['jpg', 'jpeg', 'png'])
+        
+        st.divider()
+        
+        # 2. LOS DATOS DESPUÉS
+        st.markdown("##### 2. Datos técnicos")
         col1, col2 = st.columns(2)
         with col1:
             marca = st.text_input("Marca", placeholder="John Deere")
@@ -56,10 +65,9 @@ if "informe_final" not in st.session_state:
             anio_txt = st.text_input("Año", value="2018")
             horas_txt = st.text_input("Horas", value="5000")
         
-        observaciones = st.text_area("Notas / Extras")
-        fotos = st.file_uploader("Fotos", accept_multiple_files=True, type=['jpg', 'jpeg', 'png'])
+        observaciones = st.text_area("Notas / Equipamiento Extra")
         
-        # AQUÍ SE DEFINE EL SUBMIT
+        # BOTÓN FINAL
         submit = st.form_submit_button("🚀 REALIZAR TASACIÓN", use_container_width=True)
 
     # El bloque de procesado debe estar justo debajo del formulario
