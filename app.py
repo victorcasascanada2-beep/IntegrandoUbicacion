@@ -83,4 +83,61 @@ if "informe_final" not in st.session_state:
                         st.session_state.marca_final = marca
                         st.session_state.modelo_final = modelo
                         
-                        # GENERAMOS EL HTML ANTES DEL RERUN PARA EL
+                        # GENERAMOS EL HTML ANTES DEL RERUN PARA EL BOTÓN DRIVE
+                        st.session_state.html_listo = html_generator.generar_informe_html(
+                            marca, modelo, inf, st.session_state.fotos_final, st.session_state.texto_ubicacion
+                        )
+                        
+                        zona_spinner.empty()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error técnico: {e}")
+
+# --- RESULTADOS Y BOTONES ---
+if "informe_final" in st.session_state:
+    st.markdown(st.session_state.informe_final)
+    
+    with st.expander("Ver imágenes"):
+        cols = st.columns(3)
+        for idx, img in enumerate(st.session_state.fotos_final):
+            cols[idx % 3].image(img, use_container_width=True)
+
+    st.divider()
+    
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        st.download_button(
+            "📥 DESCARGAR", 
+            data=st.session_state.html_listo, 
+            file_name=f"tasacion_{st.session_state.modelo_final}.html", 
+            mime="text/html",
+            use_container_width=True
+        )
+    
+    with c2:
+        if st.button("☁️ DRIVE", use_container_width=True):
+            with st.spinner("Subiendo..."):
+                try:
+                    creds_drive = dict(st.secrets["google"])
+                    nombre = f"Tasacion_{st.session_state.marca_final}_{st.session_state.modelo_final}.html"
+                    
+                    # Subimos el HTML que ya tenemos preparado
+                    exito = google_drive_manager.subir_informe(
+                        creds_drive, 
+                        nombre, 
+                        st.session_state.html_listo
+                    )
+                    if exito:
+                        st.success("✅ Guardado")
+                    else:
+                        st.error("❌ Falló Drive")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+    
+    with c3:
+        if st.button("🔄 OTRA", use_container_width=True):
+            # Limpiamos todo
+            for k in ["informe_final", "fotos_final", "marca_final", "modelo_final", "html_listo"]:
+                if k in st.session_state: del st.session_state[k]
+            st.rerun()
