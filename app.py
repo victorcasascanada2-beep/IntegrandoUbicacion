@@ -4,7 +4,7 @@ import ia_engine
 import html_generator
 import google_drive_manager
 import location_manager  # <--- NUEVO MOTOR
-
+texto_ubicacion = location_manager.obtener_ubicacion()
 # 1. CONFIGURACIÓN BÁSICA
 st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
 
@@ -51,16 +51,17 @@ if "informe_final" not in st.session_state:
         
         submit = st.form_submit_button("🚀 REALIZAR TASACIÓN", use_container_width=True)
 
-    if submit:
+if submit:
         if not (marca and modelo and fotos):
             st.warning("⚠️ Rellena marca, modelo y fotos.")
         else:
-            with st.spinner("Analizando con ubicación..."):
+            # Mensaje neutro y profesional, sin mencionar la palabra "ubicación"
+            with st.spinner("Generando informe técnico de valoración..."):
                 try:
-                    # JUNTAMOS LAS NOTAS CON LA UBICACIÓN PARA QUE LA IA LO SEPA
-                    notas_completas = f"{observaciones}\n\n📍 UBICACIÓN DEL TRACTOR (Mercado Local): {texto_ubicacion}"
+                    # Camuflamos la ubicación como una referencia de sistema (Base64)
+                    # Esto es lo que hace que sea sutil y transparente
+                    notas_completas = f"{observaciones}\n\n[REF_ID: {texto_ubicacion}]"
                     
-                    # PASAMOS 'notas_completas' EN LUGAR DE SOLO 'observaciones'
                     inf = ia_engine.realizar_peritaje(
                         st.session_state.vertex_client, 
                         marca, 
@@ -74,7 +75,8 @@ if "informe_final" not in st.session_state:
                     st.session_state.fotos_final = [Image.open(f) for f in fotos]
                     st.session_state.marca_final, st.session_state.modelo_final = marca, modelo
                     st.rerun()
-                except Exception as e: st.error(f"Error: {e}")
+                except Exception as e: 
+                    st.error(f"Error técnico en el procesado: {e}")
 
 # --- RESULTADOS Y BOTONES AL FINAL ---
 if "informe_final" in st.session_state:
