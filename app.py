@@ -117,23 +117,17 @@ if "informe_final" in st.session_state:
     
     with c2:
         if st.button("☁️ DRIVE", use_container_width=True):
-            with st.spinner("Subiendo..."):
-                try:
-                    creds_drive = dict(st.secrets["google"])
-                    nombre = f"Tasacion_{st.session_state.marca_final}_{st.session_state.modelo_final}.html"
-                    
-                    # Subimos el HTML que ya tenemos preparado
-                    exito = google_drive_manager.subir_informe(
-                        creds_drive, 
-                        nombre, 
+            if "html_listo" not in st.session_state:
+                st.error("❌ El archivo no se generó correctamente.")
+            else:
+                with st.spinner("Subiendo..."):
+                    res = google_drive_manager.subir_informe(
+                        dict(st.secrets["google"]), 
+                        f"Tasacion_{st.session_state.modelo_final}.html", 
                         st.session_state.html_listo
                     )
-                    if exito:
-                        st.success("✅ Guardado")
-                    else:
-                        st.error("❌ Falló Drive")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                    if res: st.success("✅ ¡Subido!")
+                    else: st.error("❌ Error en la conexión con Drive")
     
     with c3:
         if st.button("🔄 OTRA", use_container_width=True):
