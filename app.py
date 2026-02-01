@@ -6,7 +6,7 @@ import google_drive_manager
 import location_manager 
 
 # 1. CONFIGURACIÓN BÁSICA
-st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
+#st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
 
 # 2. LIMPIEZA MÍNIMA
 st.markdown("""
@@ -27,9 +27,8 @@ if "vertex_client" not in st.session_state:
 
 # --- CABECERA ---
 logo_url = "https://raw.githubusercontent.com/victorcasascanada2-beep/CopiaPruebaClave/3e79639d3faf452777931d392257eef8ed8c6144/afoto.png"
-st.image(logo_url, width=200)
-st.title("Tasación Experta")
-st.caption("Agrícola Noroeste")
+st.image(logo_url, width=300)
+st.title("Tasación Experta Agrícola Noroeste")
 st.divider()
 
 # --- FORMULARIO ---
