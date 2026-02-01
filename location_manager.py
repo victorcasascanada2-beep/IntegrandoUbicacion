@@ -4,7 +4,7 @@ import base64
 
 def obtener_ubicacion():
     # Mensaje sutil para el permiso
-    st.caption("📍 Optimizando precisión de mercado local...")
+    #st.caption("📍 Optimizando precisión de mercado local...")
     
     try:
         loc = get_geolocation()
