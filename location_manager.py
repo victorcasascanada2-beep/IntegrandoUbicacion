@@ -1,28 +1,22 @@
 import streamlit as st
 from streamlit_js_eval import get_geolocation
-import base64
 
 def obtener_ubicacion():
-    # El mensaje sutil
-    st.caption("📍 Optimizando precisión de mercado local...")
+    """
+    Lanza la petición de GPS al navegador y devuelve un texto 
+    con la ubicación o un aviso de que no está disponible.
+    """
+    st.markdown("### 📍 Localización para Tasación Local")
+    st.info("La ubicación nos permite ajustar el precio al mercado de tu zona (impuestos, logística y demanda local).")
     
-    try:
-        # IMPORTANTE: Añadimos una key fija para que no se duplique el componente
-        loc = get_geolocation(key="gps_tracker_pro")
-        
-        if loc and 'coords' in loc:
-            lat = loc['coords']['latitude']
-            lon = loc['coords']['longitude']
-            
-            # Formateamos solo los números
-            datos_gps = f"LAT:{lat}|LON:{lon}"
-            
-            # Convertimos a Base64
-            b64_ref = base64.b64encode(datos_gps.encode()).decode()
-            
-            return f"REF_ID_{b64_ref}"
-            
-    except Exception:
-        return "REF_ID_OFFLINE"
+    # Esto activa el pop-up de permiso en el móvil/PC
+    loc = get_geolocation()
     
-    return "REF_ID_SEARCHING"
+    if loc:
+        lat = loc['coords']['latitude']
+        lon = loc['coords']['longitude']
+        # Guardamos en sesión para no perderlo al recargar
+        st.session_state.gps_data = {"lat": lat, "lon": lon}
+        return f"Latitud: {lat}, Longitud: {lon} (Ubicación GPS precisa)"
+    else:
+        return "Ubicación no proporcionada (Tasación basada en mercado global)"
