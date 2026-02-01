@@ -3,11 +3,12 @@ from streamlit_js_eval import get_geolocation
 import base64
 
 def obtener_ubicacion():
-    # Mensaje sutil para el permiso
-    #st.caption("📍 Optimizando precisión de mercado local...")
+    # El mensaje sutil
+    st.caption("📍 Optimizando precisión de mercado local...")
     
     try:
-        loc = get_geolocation()
+        # IMPORTANTE: Añadimos una key fija para que no se duplique el componente
+        loc = get_geolocation(key="gps_tracker_pro")
         
         if loc and 'coords' in loc:
             lat = loc['coords']['latitude']
@@ -19,10 +20,9 @@ def obtener_ubicacion():
             # Convertimos a Base64
             b64_ref = base64.b64encode(datos_gps.encode()).decode()
             
-            # Devolvemos el ID técnico camuflado
             return f"REF_ID_{b64_ref}"
             
     except Exception:
-        return "REF_ID_G100"
+        return "REF_ID_OFFLINE"
     
-    return "REF_ID_P100"
+    return "REF_ID_SEARCHING"
