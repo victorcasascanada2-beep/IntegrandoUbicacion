@@ -1,52 +1,37 @@
-import io
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import service_account
+from googleapiclient.http import MediaIoBaseUpload
+import io
 
-# --- CONFIGURACIÓN DE AGRÍCOLA NOROESTE ---
-# Sustituye este ID por el de tu Unidad Compartida (el código de la URL)
-ID_CARPETA_DRIVE = "0AEU0RHjR-mDOUk9PVA" 
-
-# Usamos el scope completo para evitar problemas de permisos en unidades compartidas
-SCOPES = ["https://www.googleapis.com/auth/drive"]
-
-def subir_informe(creds_dict, nombre_archivo, contenido_html):
-    """
-    Sube el informe a una Unidad Compartida de Google Drive.
-    Incluye los parámetros 'supportsAllDrives' necesarios para estas unidades.
-    """
+def subir_informe(creds_dict, nombre_archivo, html_content):
     try:
-        # 1. Autenticación con la cuenta de servicio
-        creds = service_account.Credentials.from_service_account_info(
-            creds_dict, 
-            scopes=SCOPES
-        )
+        # 1. Verificamos que el contenido no esté vacío
+        if not html_content:
+            print("ERROR: El contenido HTML llegó vacío al manager")
+            return None
+
+        scopes = ['https://www.googleapis.com/auth/drive.file']
+        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
         service = build('drive', 'v3', credentials=creds)
 
-        # 2. Metadatos del archivo
-        # 'parents' debe contener el ID de la unidad o carpeta compartida
-        file_metadata = {
-            'name': nombre_archivo,
-            'parents': [ID_CARPETA_DRIVE],
-            'mimeType': 'text/html'
-        }
+        # 2. Aseguramos que el contenido sean bytes
+        if isinstance(html_content, str):
+            html_content = html_content.encode('utf-8')
+
+        file_metadata = {'name': nombre_archivo}
         
-        # 3. Preparar el flujo de datos (Stream)
-        fh = io.BytesIO(contenido_html.encode('utf-8'))
+        # 3. Creamos el stream de datos
+        fh = io.BytesIO(html_content)
         media = MediaIoBaseUpload(fh, mimetype='text/html', resumable=True)
-
-        # 4. Creación del archivo
-        # IMPORTANTE: Para Unidades Compartidas es obligatorio 'supportsAllDrives=True'
+        
         file = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id',
-            supportsAllDrives=True # Permite trabajar con Unidades Compartidas
+            body=file_metadata, 
+            media_body=media, 
+            fields='id'
         ).execute()
-
+        
         return file.get('id')
-
     except Exception as e:
-        # Imprimimos el error en los logs de Streamlit para diagnóstico
-        print(f"Error técnico en Google Drive Manager: {str(e)}")
+        # Esto saldrá en tus logs de Streamlit si algo falla
+        print(f"FALLO CRÍTICO DRIVE: {str(e)}")
         return None
