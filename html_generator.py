@@ -1,60 +1,60 @@
 import base64
 from io import BytesIO
+from datetime import datetime
 
 def generar_informe_html(marca, modelo, informe_ia, fotos_pil, ubicacion):
-    """
-    Genera un archivo HTML profesional con las fotos incrustadas y 
-    la ubicación oculta como referencia técnica.
-    """
-    
-    # 1. Convertimos las fotos de PIL a Base64 para que se vean en el HTML
+    fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M")
     fotos_html = ""
+    
     for img in fotos_pil:
+        # Opcional: Redimensionar para ahorrar espacio en el HTML
+        img.thumbnail((800, 800)) 
+        
         buf = BytesIO()
-        img.save(buf, format="JPEG")
+        img.save(buf, format="JPEG", quality=85) # Calidad 85 es el punto dulce
         img_b64 = base64.b64encode(buf.getvalue()).decode()
-        fotos_html += f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; max-width:400px; margin:10px; border-radius:8px;">'
+        fotos_html += f'<img src="data:image/jpeg;base64,{img_b64}" style="width:100%; max-width:380px; margin:5px; border: 1px solid #ddd; border-radius:8px;">'
 
-    # 2. Construcción del documento HTML
     html_content = f"""
     <!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
         <style>
-            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px; }}
-            .header {{ text-align: center; border-bottom: 2px solid #2e7d32; padding-bottom: 10px; }}
-            .section {{ margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px; }}
-            .fotos {{ display: flex; flex-wrap: wrap; justify-content: center; }}
-            .footer {{ margin-top: 50px; font-size: 0.7em; color: #888; border-top: 1px solid #eee; padding-top: 10px; }}
-            h1 {{ color: #2e7d32; }}
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: auto; padding: 40px; background-color: #f4f4f4; }}
+            .container {{ background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }}
+            .header {{ text-align: center; border-bottom: 3px solid #2e7d32; padding-bottom: 20px; }}
+            .section {{ margin-top: 25px; padding: 20px; border-left: 5px solid #2e7d32; background: #fff; }}
+            .fotos {{ display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px; margin-top: 20px; }}
+            .footer {{ margin-top: 40px; font-size: 0.8em; color: #999; text-align: center; }}
+            h1 {{ color: #2e7d32; margin-bottom: 5px; }}
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>INFORME DE TASACIÓN EXPERTA</h1>
-            <p><strong>Vehículo:</strong> {marca} {modelo}</p>
-        </div>
-
-        <div class="section">
-            <h2>Análisis Técnico de la IA</h2>
-            <div style="white-space: pre-wrap;">{informe_ia}</div>
-        </div>
-
-        <div class="section">
-            <h2>Evidencias Fotográficas</h2>
-            <div class="fotos">
-                {fotos_html}
+        <div class="container">
+            <div class="header">
+                <h1>INFORME DE TASACIÓN EXPERTA</h1>
+                <p><strong>Vehículo:</strong> {marca} {modelo} | <strong>Fecha:</strong> {fecha_actual}</p>
             </div>
-        </div>
 
-        <div class="footer">
-            <p>Este informe ha sido generado automáticamente por el sistema de Tasación Agrícola Noroeste.</p>
-            <p style="color: #ccc;">REF_SISTEMA: {ubicacion}</p>
+            <div class="section">
+                <h2 style="margin-top:0;">Análisis del Especialista (IA)</h2>
+                <div style="white-space: pre-wrap;">{informe_ia}</div>
+            </div>
+
+            <div class="section">
+                <h2 style="margin-top:0;">Registro Fotográfico</h2>
+                <div class="fotos">
+                    {fotos_html}
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Generado por Tasación Agrícola Noroeste</p>
+                <code>ID_REF: {ubicacion}</code>
+            </div>
         </div>
     </body>
     </html>
     """
-    
-    # Devolvemos el HTML listo para ser descargado o subido a Drive
     return html_content.encode('utf-8')
