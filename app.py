@@ -2,7 +2,8 @@ import streamlit as st
 from PIL import Image
 import ia_engine
 import html_generator
-import google_drive_manager 
+import google_drive_manager
+import location_manager  # <--- NUEVO MOTOR
 
 # 1. CONFIGURACIÓN BÁSICA
 st.set_page_config(page_title="Tasador Agrícola", page_icon="🚜", layout="centered")
