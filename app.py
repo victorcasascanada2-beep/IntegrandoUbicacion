@@ -124,7 +124,20 @@ if "informe_final" in st.session_state:
     
     with c2:
         if st.button("☁️ DRIVE", use_container_width=True):
-            with st.spinner("Subiendo..."):
-                creds_drive = dict(st.secrets["google"])
-                nombre_archivo = f"Tasacion_{st.session_state.marca_final}_{st.session_state.modelo_final}.html"
-                res = google_drive_
+            # El spinner SI está aquí, pero solo funciona si el código es correcto
+            with st.spinner("Subiendo a Google Drive..."):
+                try:
+                    creds_drive = dict(st.secrets["google"])
+                    nombre_archivo = f"Tasacion_{st.session_state.marca_final}_{st.session_state.modelo_final}.html"
+                    
+                    # AQUÍ ESTABA EL ERROR (Debe ser la llamada completa al manager)
+                    res = google_drive_manager.subir_informe(
+                        creds_drive, 
+                        nombre_archivo, 
+                        st.session_state.html_listo
+                    )
+                    
+                    if res: 
+                        st.success("✅ Guardado correctamente")
+                except Exception as e:
+                    st.error(f"Error al subir: {e}")
