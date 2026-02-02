@@ -2,39 +2,47 @@ import streamlit as st
 from streamlit_js_eval import get_geolocation
 import base64
 import requests
+import time
 
 def obtener_ubicacion():
     """
-    Intenta obtener ubicación por GPS. 
-    Si falla (como en PC), intenta obtenerla por la red (IP).
+    Intenta capturar GPS. Si el Maps funciona pero aquí no, 
+    es por un retraso en el permiso del navegador. 
+    Usamos la red como apoyo inmediato tras 10s.
     """
-    # 1. Intentamos el GPS del navegador (Cualquier dispositivo)
-    loc = get_geolocation(component_key="gps_network_hybrid")
+    # 1. Forzamos la petición al navegador
+    # Usamos una key dinámica para que el navegador no "se duerma"
+    t_key = int(time.time() / 5) # Cambia cada 5 segundos
+    loc = get_geolocation(component_key=f"gps_agri_{t_key}")
     
+    if "inicio_gps" not in st.session_state:
+        st.session_state.inicio_gps = time.time()
+
+    # Si el navegador responde con coordenadas (lo que hace el punto azul de Maps)
     if loc and isinstance(loc, dict) and 'coords' in loc:
         try:
-            lat = loc['coords']['latitude']
-            lon = loc['coords']['longitude']
-            datos_raw = f"{lat},{lon}"
-            b64_ref = base64.b64encode(datos_raw.encode()).decode()
-            return f"REF_ID_{b64_ref}"
-        except:
-            pass
+            lat, lon = loc['coords']['latitude'], loc['coords']['longitude']
+            b64 = base64.b64encode(f"{lat},{lon}".encode()).decode()
+            st.session_state.pop("inicio_gps", None)
+            return f"REF_ID_{b64}"
+        except: pass
 
-    # 2. Si el GPS falla o es PC, usamos la RED (IP Geolocation)
-    # Esto no pide permiso y funciona por la conexión a internet
-    try:
-        # Usamos un servicio gratuito y rápido de geolocalización por IP
-        response = requests.get('https://ipapi.co/json/', timeout=3)
-        if response.status_code == 200:
-            data = response.json()
-            lat = data.get('latitude')
-            lon = data.get('longitude')
-            if lat and lon:
-                datos_raw = f"{lat},{lon}"
-                b64_ref = base64.b64encode(datos_raw.encode()).decode()
-                return f"REF_ID_NET_{b64_ref}"
-    except:
-        pass
+    # 2. Si pasan los 10 segundos y el navegador sigue "pensando"
+    tiempo_espera = time.time() - st.session_state.inicio_gps
+    if tiempo_espera > 10:
+        try:
+            # Saltamos a la red (IP) que es lo que no falla nunca
+            res = requests.get('https://ipapi.co/json/', timeout=2)
+            if res.status_code == 200:
+                data = res.json()
+                lat, lon = data.get('latitude'), data.get('longitude')
+                if lat and lon:
+                    b64 = base64.b64encode(f"{lat},{lon}".encode()).decode()
+                    st.session_state.pop("inicio_gps", None)
+                    return f"REF_ID_NET_{b64}"
+        except: pass
+        
+        # Último recurso si no hay internet ni GPS
+        return "REF_ID_ZAMORA_DEFAULT"
 
     return "REF_ID_BUSCANDO"
