@@ -67,7 +67,7 @@ if "vertex_client" not in st.session_state:
 # -------------------------------------------------
 # 5. CABECERA
 # -------------------------------------------------
-logo_url = "https://raw.githubusercontent.com/victorcasascanada2-beep/Tasacion1.0Beta/main/afoto.png"
+st.image("https://raw.githubusercontent.com/victorcasascanada2-beep/Tasacion1.0Beta/main/afoto.png", width=300)
 st.image(logo_url, width=300)
 st.title("Tasación Experta")
 st.caption("Ajustando valores según mercado local de peritaje.")
