@@ -5,7 +5,7 @@ import html_generator
 import google_drive_manager
 import location_manager
 from streamlit_js_eval import get_geolocation
-
+coords_usuario = None
 # -------------------------------------------------
 # 1. CONFIGURACIÓN BÁSICA
 # -------------------------------------------------
