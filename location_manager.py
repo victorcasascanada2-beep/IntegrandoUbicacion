@@ -1,48 +1,39 @@
-import streamlit as st
-from streamlit_js_eval import get_geolocation
 import base64
 import requests
-import time
 
-def obtener_ubicacion():
+HEADERS = {"User-Agent": "tasador-agricola"}
+TIMEOUT = 2
+
+def _encode(texto: str) -> str:
+    return base64.urlsafe_b64encode(texto.encode()).decode()
+
+def _reverse_geocode(lat: float, lon: float) -> str | None:
+    url = (
+        "https://nominatim.openstreetmap.org/reverse"
+        f"?lat={lat}&lon={lon}&format=json&zoom=14"
+    )
+    r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    data = r.json()
+    addr = data.get("address", {})
+    return (
+        addr.get("village")
+        or addr.get("town")
+        or addr.get("city")
+        or addr.get("municipality")
+    )
+
+def obtener_ubicacion_final(coords: tuple[float, float] | None) -> str:
     """
-    Intenta capturar GPS. Si el Maps funciona pero aquí no, 
-    es por un retraso en el permiso del navegador. 
-    Usamos la red como apoyo inmediato tras 10s.
+    coords: (lat, lon) o None
+    Devuelve SIEMPRE algo codificado.
     """
-    # 1. Forzamos la petición al navegador
-    # Usamos una key dinámica para que el navegador no "se duerma"
-    t_key = int(time.time() / 5) # Cambia cada 5 segundos
-    loc = get_geolocation(component_key=f"gps_agri_{t_key}")
-    
-    if "inicio_gps" not in st.session_state:
-        st.session_state.inicio_gps = time.time()
-
-    # Si el navegador responde con coordenadas (lo que hace el punto azul de Maps)
-    if loc and isinstance(loc, dict) and 'coords' in loc:
+    if coords:
         try:
-            lat, lon = loc['coords']['latitude'], loc['coords']['longitude']
-            b64 = base64.b64encode(f"{lat},{lon}".encode()).decode()
-            st.session_state.pop("inicio_gps", None)
-            return f"REF_ID_{b64}"
-        except: pass
+            pueblo = _reverse_geocode(coords[0], coords[1])
+            if pueblo:
+                return f"LOC_{_encode(pueblo)}"
+        except Exception:
+            pass
 
-    # 2. Si pasan los 10 segundos y el navegador sigue "pensando"
-    tiempo_espera = time.time() - st.session_state.inicio_gps
-    if tiempo_espera > 10:
-        try:
-            # Saltamos a la red (IP) que es lo que no falla nunca
-            res = requests.get('https://ipapi.co/json/', timeout=2)
-            if res.status_code == 200:
-                data = res.json()
-                lat, lon = data.get('latitude'), data.get('longitude')
-                if lat and lon:
-                    b64 = base64.b64encode(f"{lat},{lon}".encode()).decode()
-                    st.session_state.pop("inicio_gps", None)
-                    return f"REF_ID_NET_{b64}"
-        except: pass
-        
-        # Último recurso si no hay internet ni GPS
-        return "REF_ID_ZAMORA_DEFAULT"
-
-    return "REF_ID_BUSCANDO"
+    # fallback estable
+    return f"LOC_{_encode('ES')}"
