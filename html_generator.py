@@ -2,77 +2,74 @@ import base64
 from io import BytesIO
 
 def procesar_foto_b64(foto):
-    """
-    Convierte una imagen de PIL a una cadena Base64 optimizada para HTML.
-    Añadimos una pequeña compresión para que el archivo final no sea demasiado pesado.
-    """
+    """Convierte la imagen a texto para el HTML con compresión"""
     buffered = BytesIO()
-    # Convertimos a RGB por si hay transparencias que den problemas en JPEG
     if foto.mode in ("RGBA", "P"):
         foto = foto.convert("RGB")
-    
-    # Guardamos con calidad optimizada
     foto.save(buffered, format="JPEG", quality=75)
     return base64.b64encode(buffered.getvalue()).decode()
 
 def generar_informe_html(marca, modelo, informe_texto, lista_fotos, ubicacion_b64):
-    """
-    Genera el documento HTML profesional.
-    Recibe la ubicación ya codificada en Base64 para insertarla discretamente.
-    """
+    """Genera el HTML con estructura de párrafos y diseño limpio"""
     
-    # 1. Procesamos las fotos para el reporte
+    # 1. Procesamos las fotos
     fotos_html = ""
     for foto in lista_fotos:
         img_b64 = procesar_foto_b64(foto)
         fotos_html += f'<img src="data:image/jpeg;base64,{img_b64}" style="width: 45%; margin: 10px; border-radius: 8px; border: 1px solid #ddd;">'
 
-    # 2. Estructura del documento con diseño limpio (Sin mención visual a GPS)
+    # 2. TRATAMIENTO DEL TEXTO: Convertimos saltos de línea en párrafos reales
+    # Esto evita que salga "amogollonado"
+    parrafos = informe_texto.split('\n')
+    texto_estructurado = ""
+    for p in parrafos:
+        if p.strip(): # Si el párrafo no está vacío
+            texto_estructurado += f'<p style="margin-bottom: 15px; text-align: justify;">{p.strip()}</p>'
+
     html_template = f"""
     <!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
         <style>
-            body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 40px; color: #333; background-color: #f4f4f4; }}
-            .container {{ background-color: white; max-width: 800px; margin: auto; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-            .header {{ text-align: center; border-bottom: 3px solid #2e7d32; padding-bottom: 20px; margin-bottom: 20px; }}
-            .header h1 {{ color: #2e7d32; margin: 0; font-size: 28px; }}
-            .header h2 {{ color: #555; font-size: 18px; margin: 5px 0; }}
-            .content {{ line-height: 1.6; font-size: 16px; }}
-            .gallery {{ text-align: center; margin-top: 30px; background: #fafafa; padding: 20px; border-radius: 8px; }}
-            .gallery h3 {{ color: #2e7d32; border-bottom: 1px solid #eee; padding-bottom: 10px; }}
-            .footer {{ margin-top: 50px; font-size: 0.75em; text-align: center; color: #888; border-top: 1px solid #eee; padding-top: 20px; }}
-            .ref-tecnica {{ color: #f9f9f9; font-size: 8px; }} /* Casi invisible para el ojo humano */
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 40px; color: #333; background-color: #f4f4f4; }}
+            .container {{ background-color: white; max-width: 850px; margin: auto; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
+            .header {{ text-align: center; border-bottom: 4px solid #2e7d32; padding-bottom: 20px; margin-bottom: 30px; }}
+            .header h1 {{ color: #2e7d32; margin: 0; font-size: 32px; text-transform: uppercase; }}
+            .content {{ line-height: 1.8; font-size: 17px; color: #444; }}
+            .gallery {{ text-align: center; margin-top: 40px; background: #fdfdfd; padding: 25px; border: 1px solid #eee; border-radius: 10px; }}
+            .footer {{ margin-top: 60px; font-size: 0.85em; text-align: center; color: #666; border-top: 1px solid #eee; padding-top: 25px; }}
+            .ref-doc {{ 
+                margin-top: 20px; 
+                font-family: monospace; 
+                color: #bbb; /* Color gris claro, ahora sí se ve pero no molesta */
+                font-size: 10px; 
+            }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
                 <h1>Agrícola Noroeste</h1>
-                <h2>Certificado de Tasación Profesional</h2>
-                <p><strong>Equipo:</strong> {marca} {modelo}</p>
+                <p style="font-size: 20px; font-weight: bold; margin: 10px 0;">INFORME PROFESIONAL DE TASACIÓN</p>
+                <p><strong>Vehículo:</strong> {marca} {modelo}</p>
             </div>
             
             <div class="content">
-                {informe_texto.replace('\\n', '<br>')}
+                {texto_estructurado}
             </div>
 
             <div class="gallery">
-                <h3>Registro Fotográfico del Peritaje</h3>
+                <h3 style="color: #2e7d32; margin-bottom: 20px;">Evidencias del Peritaje</h3>
                 {fotos_html}
             </div>
 
             <div class="footer">
-                <p>Este informe ha sido emitido mediante el sistema de tasación inteligente de Agrícola Noroeste.</p>
-                <p>La valoración se basa en el estado visual, datos técnicos y análisis de mercado local actual.</p>
-                <br>
-                <span class="ref-tecnica">RefDocumento: {ubicacion_b64}</span>
+                <p>Este documento es una tasación técnica generada por el sistema de IA de Agrícola Noroeste.</p>
+                <div class="ref-doc">ID_VERIFICACIÓN: {ubicacion_b64}</div>
             </div>
         </div>
     </body>
     </html>
     """
-    
-    # Devolvemos el HTML codificado en bytes para que sea compatible con Descarga y Drive
     return html_template.encode('utf-8')
