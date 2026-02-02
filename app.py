@@ -13,7 +13,7 @@ st.markdown("""
 <style>
     [data-testid="stToolbar"], footer {display: none;}
     section[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {display: none !important;}
-    .block-container { padding-top: 1rem !important; margin-top: -1rem !important; }
+    .block-container { padding-top: 3rem !important; margin-top: -1rem !important; }
     .stSpinner > div { border-top-color: #2e7d32 !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -32,7 +32,7 @@ if "vertex_client" not in st.session_state:
 
 # --- CABECERA ---
 logo_url = "https://raw.githubusercontent.com/victorcasascanada2-beep/CopiaPruebaClave/3e79639d3faf452777931d392257eef8ed8c6144/afoto.png"
-st.image(logo_url, width=200)
+st.image(logo_url, width=300)
 st.title("Tasación Experta")
 # Mensaje discreto sobre la ubicación
 st.caption("Optimizando precisión de mercado según zona de peritaje.") 
