@@ -118,7 +118,7 @@ if "informe_final" not in st.session_state:
                         # Aquí recogemos lo que el navegador haya resuelto
                         # Si no hay nada → fallback España inmediato
 
-                        ubicacion_codificada = location_manager.obtener_ubicacion_final()
+                        ubicacion_codificada = location_manager.obtener_ubicacion_final(None)
 
                         # HTML final con ubicación ya resuelta
                         st.session_state.html_listo = html_generator.generar_informe_html(
