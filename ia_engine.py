@@ -43,8 +43,8 @@ def realizar_peritaje(client, marca, modelo, anio, horas, observaciones, lista_f
             contents=[prompt] + fotos_ia,
             config={
                 "tools": [{"google_search": {}}],
-                "temperature": 0.0,
-                "max_output_tokens": 2048
+                "temperature": 0.35,
+                "max_output_tokens": 4096
             }
         )
         return response.text
