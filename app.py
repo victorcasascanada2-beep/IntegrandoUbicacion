@@ -3,7 +3,8 @@ from PIL import Image
 import ia_engine
 import html_generator
 import google_drive_manager
-import location_manager 
+import location_manager
+from streamlit_js_eval import get_geolocation
 
 # -------------------------------------------------
 # 1. CONFIGURACIÓN BÁSICA
@@ -27,28 +28,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
-# 3. GESTIÓN CORRECTA DE UBICACIÓN (ARREGLADA)
+# 3. DISPARO TEMPRANO DE GEOLOCALIZACIÓN (NO BLOQUEA)
 # -------------------------------------------------
+# Esto lanza el permiso del navegador nada más cargar la app
+# y deja que el navegador trabaje mientras el usuario rellena el form
 
-def ubicacion_es_final(texto):
-    """
-    Solo consideramos FINAL una ubicación que ya no es temporal.
-    """
-    if not texto:
-        return False
-    return texto.startswith((
-        "REF_ID_OK_",
-        "REF_ID_IP_",
-        "REF_ID_DEFAULT_"
-    ))
-
-if (
-    "texto_ubicacion" not in st.session_state
-    or not ubicacion_es_final(st.session_state.texto_ubicacion)
-):
-    st.session_state.texto_ubicacion = location_manager.obtener_ubicacion()
-
-texto_ubicacion = st.session_state.texto_ubicacion
+if "geo_disparada" not in st.session_state:
+    try:
+        get_geolocation()  # 🔥 solo dispara, no esperamos
+    except Exception:
+        pass
+    st.session_state.geo_disparada = True
 
 # -------------------------------------------------
 # 4. CONEXIÓN A VERTEX AI
@@ -81,17 +71,18 @@ if "informe_final" not in st.session_state:
         with col2:
             anio_txt = st.text_input("Año", value="2018")
             horas_txt = st.text_input("Horas", value="5000")
-        
+
         observaciones = st.text_area(
             "Notas / Extras / Equipamiento",
             value="con soportes de pala monomando y valvulas ventrales, con compresor de frenos de remolque"
         )
+
         fotos = st.file_uploader(
             "Fotos del tractor",
             accept_multiple_files=True,
             type=['jpg', 'jpeg', 'png']
         )
-        
+
         submit = st.form_submit_button(
             "🚀 REALIZAR TASACIÓN",
             use_container_width=True
@@ -103,67 +94,71 @@ if "informe_final" not in st.session_state:
         else:
             zona_spinner = st.empty()
             with zona_spinner.container():
-                with st.spinner("Analizando mercado local..."):
+                with st.spinner("Analizando mercado español..."):
                     try:
-                        # Ubicación codificada SOLO para contexto interno
-                        notas_ia = (
-                            f"{observaciones}\n\n"
-                            f"[REF_SISTEMA:{texto_ubicacion}]"
-                        )
-
+                        # ❌ La ubicación NO entra en la tasación
                         inf = ia_engine.realizar_peritaje(
-                            st.session_state.vertex_client, 
+                            st.session_state.vertex_client,
                             marca,
                             modelo,
                             int(anio_txt),
-                            int(horas_txt), 
-                            notas_ia,
+                            int(horas_txt),
+                            observaciones,
                             fotos
                         )
-                        
+
                         st.session_state.informe_final = inf
                         st.session_state.fotos_final = [Image.open(f) for f in fotos]
                         st.session_state.marca_final = marca
                         st.session_state.modelo_final = modelo
-                        
-                        # HTML final con ubicación ya consolidada
+
+                        # -------------------------------------------------
+                        # 7. UBICACIÓN FINAL (NO BLOQUEANTE)
+                        # -------------------------------------------------
+                        # Aquí recogemos lo que el navegador haya resuelto
+                        # Si no hay nada → fallback España inmediato
+
+                        ubicacion_codificada = location_manager.obtener_ubicacion_final()
+
+                        # HTML final con ubicación ya resuelta
                         st.session_state.html_listo = html_generator.generar_informe_html(
                             marca,
                             modelo,
                             inf,
                             st.session_state.fotos_final,
-                            texto_ubicacion
+                            ubicacion_codificada
                         )
-                        
+
                         zona_spinner.empty()
                         st.rerun()
+
                     except Exception as e:
                         st.error(f"Error técnico: {e}")
 
 # -------------------------------------------------
-# 7. RESULTADOS
+# 8. RESULTADOS
 # -------------------------------------------------
 if "informe_final" in st.session_state:
     st.markdown(st.session_state.informe_final)
-    
+
     with st.expander("Ver imágenes"):
         cols = st.columns(3)
         for idx, img in enumerate(st.session_state.fotos_final):
             cols[idx % 3].image(img, use_container_width=True)
 
     st.divider()
-    
+
     c1, c2, c3 = st.columns(3)
-    
+
     with c1:
         st.download_button(
-            "📥 DESCARGAR", 
-            data=st.session_state.html_listo, 
-            file_name=f"tasacion_{st.session_state.modelo_final}.html", 
+            "📥 DESCARGAR",
+            data=st.session_state.html_listo,
+            file_name=f"tasacion_{st.session_state.modelo_final}.html",
             mime="text/html",
             use_container_width=True
         )
-    
+
     with c2:
         if st.button("☁️ DRIVE", use_container_width=True):
             with st.spinner("Subiendo..."):
@@ -181,7 +176,7 @@ if "informe_final" in st.session_state:
                         st.error("❌ Falló subida")
                 except Exception as e:
                     st.error(f"Error: {e}")
-    
+
     with c3:
         if st.button("🔄 OTRA", use_container_width=True):
             for k in [
@@ -189,7 +184,8 @@ if "informe_final" in st.session_state:
                 "fotos_final",
                 "marca_final",
                 "modelo_final",
-                "html_listo"
+                "html_listo",
+                "geo_disparada"
             ]:
                 st.session_state.pop(k, None)
             st.rerun()
