@@ -47,13 +47,13 @@ if "informe_final" not in st.session_state:
     with st.form("form_tasacion"):
         col1, col2 = st.columns(2)
         with col1:
-            marca = st.text_input("Marca", placeholder="John Deere")
-            modelo = st.text_input("Modelo", placeholder="6155R")
+            marca = st.text_input("Marca", value="John Deere")
+            modelo = st.text_input("Modelo", value="6175R")
         with col2:
             anio_txt = st.text_input("Año", value="2018")
             horas_txt = st.text_input("Horas", value="5000")
         
-        observaciones = st.text_area("Notas / Extras / Equipamiento")
+        observaciones = st.text_area("Notas / Extras / Equipamiento", value="con soportes de pala monomando y valvulas ventrales, con compresor de frenos de remolque")
         fotos = st.file_uploader("Fotos del tractor", accept_multiple_files=True, type=['jpg', 'jpeg', 'png'])
         
         submit = st.form_submit_button("🚀 REALIZAR TASACIÓN", use_container_width=True)
