@@ -1,22 +1,33 @@
 import streamlit as st
 from streamlit_js_eval import get_geolocation
+import base64
 
 def obtener_ubicacion():
     """
-    Lanza la petición de GPS al navegador y devuelve un texto 
-    con la ubicación o un aviso de que no está disponible.
+    Intenta obtener el GPS. Si no puede (PC, permiso denegado, error),
+    devuelve un código seguro para que la app NO se rompa.
     """
-    st.markdown("### 📍 Localización para Tasación Local")
-    st.info("La ubicación nos permite ajustar el precio al mercado de tu zona (impuestos, logística y demanda local).")
-    
-    # Esto activa el pop-up de permiso en el móvil/PC
-    loc = get_geolocation()
-    
-    if loc:
-        lat = loc['coords']['latitude']
-        lon = loc['coords']['longitude']
-        # Guardamos en sesión para no perderlo al recargar
-        st.session_state.gps_data = {"lat": lat, "lon": lon}
-        return f"Latitud: {lat}, Longitud: {lon} (Ubicación GPS precisa)"
-    else:
-        return "Ubicación no proporcionada (Tasación basada en mercado global)"
+    # Usamos una key única para evitar conflictos internos de Streamlit
+    loc = get_geolocation(component_key="gps_universal_fix")
+
+    # 1. CASO DE ÉXITO: Tenemos datos y coordenadas
+    if loc and isinstance(loc, dict) and 'coords' in loc:
+        try:
+            lat = loc['coords']['latitude']
+            lon = loc['coords']['longitude']
+            
+            # Formateamos bonito para la IA
+            datos_gps = f"LAT:{lat}|LON:{lon}"
+            b64_ref = base64.b64encode(datos_gps.encode()).decode()
+            return f"REF_GPS_{b64_ref}"
+        except Exception:
+            # Si falla la conversión, no rompemos nada
+            return "REF_ERROR_FORMATO"
+
+    # 2. CASO DE ERROR CONOCIDO (El navegador dice qué pasó)
+    if loc and isinstance(loc, dict) and 'error' in loc:
+        # El usuario dijo "No" o el PC no tiene sensor
+        return "REF_GPS_DENEGADO_O_PC"
+
+    # 3. CASO DE ESPERA / SIN DATOS (Aún cargando o PC sin respuesta)
+    return "REF_MODO_PC_SIN_GPS"
