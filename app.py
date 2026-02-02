@@ -13,7 +13,7 @@ st.markdown("""
 <style>
     [data-testid="stToolbar"], footer {display: none;}
     section[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {display: none !important;}
-    .block-container { padding-top: 3rem !important; margin-top: -1rem !important; }
+    .block-container { padding-top: 4rem !important; margin-top: -1rem !important; }
     .stSpinner > div { border-top-color: #2e7d32 !important; }
 </style>
 """, unsafe_allow_html=True)
