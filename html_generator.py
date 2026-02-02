@@ -1,30 +1,68 @@
 import base64
 from io import BytesIO
+from PIL import Image
+import re
 
 def procesar_foto_b64(foto):
-    """Convierte la imagen a texto para el HTML con compresión"""
+    """Reduce peso de foto para el HTML."""
     buffered = BytesIO()
+    foto.thumbnail((1024, 1024))
     if foto.mode in ("RGBA", "P"):
         foto = foto.convert("RGB")
-    foto.save(buffered, format="JPEG", quality=75)
+    foto.save(buffered, format="JPEG", quality=70, optimize=True)
     return base64.b64encode(buffered.getvalue()).decode()
 
-def generar_informe_html(marca, modelo, informe_texto, lista_fotos, ubicacion_b64):
-    """Genera el HTML con estructura de párrafos y diseño limpio"""
+def formatear_contenido(texto):
+    """
+    Convierte el texto de la IA (Markdown) en HTML real,
+    detectando tablas, negritas y párrafos.
+    """
+    # 1. Procesar Tablas de Markdown (| Col | Col |)
+    lineas = texto.split('\n')
+    resultado = []
+    en_tabla = False
     
-    # 1. Procesamos las fotos
+    for linea in lineas:
+        if '|' in linea:
+            columnas = [c.strip() for c in linea.split('|') if c.strip()]
+            if not columnas: continue
+            
+            if not en_tabla:
+                resultado.append('<div style="overflow-x:auto;"><table><thead><tr>')
+                for col in columnas:
+                    resultado.append(f'<th>{col}</th>')
+                resultado.append('</tr></thead><tbody>')
+                en_tabla = True
+            elif '---' in linea:
+                continue # Saltar línea separadora de markdown
+            else:
+                resultado.append('<tr>')
+                for col in columnas:
+                    resultado.append(f'<td>{col}</td>')
+                resultado.append('</tr>')
+        else:
+            if en_tabla:
+                resultado.append('</tbody></table></div>')
+                en_tabla = False
+            
+            if linea.strip():
+                # Detectar negritas (**texto**)
+                linea_formateada = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linea)
+                resultado.append(f'<p>{linea_formateada}</p>')
+
+    if en_tabla: resultado.append('</tbody></table></div>')
+    return '\n'.join(resultado)
+
+def generar_informe_html(marca, modelo, informe_texto, lista_fotos, ubicacion_b64):
+    """Genera el HTML con tablas cuadradas y fotos optimizadas."""
+    
     fotos_html = ""
     for foto in lista_fotos:
         img_b64 = procesar_foto_b64(foto)
-        fotos_html += f'<img src="data:image/jpeg;base64,{img_b64}" style="width: 45%; margin: 10px; border-radius: 8px; border: 1px solid #ddd;">'
+        fotos_html += f'<img src="data:image/jpeg;base64,{img_b64}" style="width: 48%; margin: 1%; border-radius: 5px; border: 1px solid #ddd;" loading="lazy">'
 
-    # 2. TRATAMIENTO DEL TEXTO: Convertimos saltos de línea en párrafos reales
-    # Esto evita que salga "amogollonado"
-    parrafos = informe_texto.split('\n')
-    texto_estructurado = ""
-    for p in parrafos:
-        if p.strip(): # Si el párrafo no está vacío
-            texto_estructurado += f'<p style="margin-bottom: 15px; text-align: justify;">{p.strip()}</p>'
+    # Convertimos el texto bruto en HTML estructurado (con tablas)
+    contenido_final = formatear_contenido(informe_texto)
 
     html_template = f"""
     <!DOCTYPE html>
@@ -37,14 +75,16 @@ def generar_informe_html(marca, modelo, informe_texto, lista_fotos, ubicacion_b6
             .header {{ text-align: center; border-bottom: 4px solid #2e7d32; padding-bottom: 20px; margin-bottom: 30px; }}
             .header h1 {{ color: #2e7d32; margin: 0; font-size: 32px; text-transform: uppercase; }}
             .content {{ line-height: 1.8; font-size: 17px; color: #444; }}
+            
+            /* ESTILOS DE TABLA CORREGIDOS */
+            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px; min-width: 400px; }}
+            th {{ background-color: #2e7d32; color: white; padding: 12px; text-align: left; border: 1px solid #ddd; }}
+            td {{ padding: 10px; border: 1px solid #ddd; text-align: left; }}
+            tr:nth-child(even) {{ background-color: #f9f9f9; }}
+            
             .gallery {{ text-align: center; margin-top: 40px; background: #fdfdfd; padding: 25px; border: 1px solid #eee; border-radius: 10px; }}
             .footer {{ margin-top: 60px; font-size: 0.85em; text-align: center; color: #666; border-top: 1px solid #eee; padding-top: 25px; }}
-            .ref-doc {{ 
-                margin-top: 20px; 
-                font-family: monospace; 
-                color: #bbb; /* Color gris claro, ahora sí se ve pero no molesta */
-                font-size: 10px; 
-            }}
+            .ref-doc {{ margin-top: 20px; font-family: monospace; color: #bbb; font-size: 10px; }}
         </style>
     </head>
     <body>
@@ -56,7 +96,7 @@ def generar_informe_html(marca, modelo, informe_texto, lista_fotos, ubicacion_b6
             </div>
             
             <div class="content">
-                {texto_estructurado}
+                {contenido_final}
             </div>
 
             <div class="gallery">
