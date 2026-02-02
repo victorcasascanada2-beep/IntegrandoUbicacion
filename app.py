@@ -38,20 +38,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
-# 3. GESTIÓN DE UBICACIÓN (El motor de ayer)
+# 3. GESTIÓN DE UBICACIÓN
 # -------------------------------------------------
-# Disparamos el GPS nada más entrar
 if "geo_data" not in st.session_state:
     st.session_state.geo_data = None
 
-# Intentamos capturar coordenadas (esto lanza el permiso azul del Maps)
 coords = get_geolocation(component_key="gps_disparo_agricola")
 
 if coords and "coords" in coords:
     st.session_state.geo_data = (coords["coords"]["latitude"], coords["coords"]["longitude"])
 
-# Convertimos a Base64 (pueblo o fallback)
-# Esto es lo que usaremos para la IA y el RefDoc
 texto_ubicacion = location_manager.obtener_ubicacion_final(st.session_state.geo_data)
 
 # -------------------------------------------------
@@ -65,10 +61,14 @@ if "vertex_client" not in st.session_state:
         st.error(f"Error de credenciales: {e}")
 
 # -------------------------------------------------
-# 5. CABECERA
+# 5. CABECERA (CORREGIDA)
 # -------------------------------------------------
-st.image("https://raw.githubusercontent.com/victorcasascanada2-beep/Tasacion1.0Beta/main/afoto.png", width=300)
+# Definimos la URL una sola vez para evitar NameError
+logo_url = "https://raw.githubusercontent.com/victorcasascanada2-beep/Tasacion1.0Beta/main/afoto.png"
+
+# Mostramos el logo usando la variable
 st.image(logo_url, width=300)
+
 st.title("Tasación Experta")
 st.caption("Ajustando valores según mercado local de peritaje.")
 st.divider()
@@ -97,8 +97,6 @@ if "informe_final" not in st.session_state:
         else:
             with st.spinner("Analizando mercado local y estado visual..."):
                 try:
-                    # Inyectamos la ubicación codificada de forma interna para la IA
-                    # (La IA usará el pueblo real si está en el Base64)
                     notas_ia = f"{observaciones}\n\n[REF_GEO: {texto_ubicacion}]"
                     
                     inf = ia_engine.realizar_peritaje(
@@ -107,12 +105,10 @@ if "informe_final" not in st.session_state:
                         notas_ia, fotos
                     )
                     
-                    # Guardamos resultados
                     st.session_state.informe_final = inf
                     st.session_state.fotos_final = [Image.open(f) for f in fotos]
                     st.session_state.marca_final, st.session_state.modelo_final = marca, modelo
                     
-                    # Generamos el HTML (con el motor de tablas y fotos ligeras)
                     st.session_state.html_listo = html_generator.generar_informe_html(
                         marca, modelo, inf, st.session_state.fotos_final, texto_ubicacion
                     )
@@ -125,7 +121,6 @@ if "informe_final" not in st.session_state:
 # 7. RESULTADOS Y DESCARGA
 # -------------------------------------------------
 if "informe_final" in st.session_state:
-    # Muestra el informe en la app (Streamlit ya formatea bien las tablas aquí)
     st.markdown(st.session_state.informe_final)
     
     with st.expander("Ver imágenes analizadas"):
@@ -135,7 +130,6 @@ if "informe_final" in st.session_state:
 
     st.divider()
     
-    # BOTONES DE ACCIÓN
     c1, c2, c3 = st.columns(3)
     
     with c1:
