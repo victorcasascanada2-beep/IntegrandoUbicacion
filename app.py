@@ -18,9 +18,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. CAPTURA DE UBICACIÓN (Invisible y persistente)
-if "texto_ubicacion" not in st.session_state:
+# --- GESTIÓN DE UBICACIÓN REFORZADA ---
+# Si no hay ubicación, o si la que hay es un aviso de "buscando/no disponible", reintentamos
+if "texto_ubicacion" not in st.session_state or "REF_ID" not in st.session_state.texto_ubicacion:
     st.session_state.texto_ubicacion = location_manager.obtener_ubicacion()
+
+# Esta variable es la que usaremos en el resto del código
+texto_ubicacion = st.session_state.texto_ubicacion
 
 # 4. CONEXIÓN VERTEX
 if "vertex_client" not in st.session_state:
